@@ -36,6 +36,8 @@ struct vk_physical_device
 };
 
 
+
+
 class vk_context{
 public:
     vk_context(uint32_t cx, uint32_t cy, HWND hwnd);
@@ -48,12 +50,27 @@ public:
         const VkInstance instance, const VkSurfaceKHR surface, vk_physical_device* device);
     void create_surface();
 
+    void create_command_pool();
+
+    void create_swapchain();
+    void create_command_buffers();
+
     VkInstance m_instance{VK_NULL_HANDLE};
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;
     VkDevice m_device = VK_NULL_HANDLE;
     VkQueue m_graphics_queue = nullptr;
+    vk_physical_device m_physical_device{};
 
     VkDebugUtilsMessengerEXT m_debug_messenger{};
+
+    // swapchain
+    VkSwapchainKHR m_swapchain{};
+    std::vector<VkImage> m_swapchain_images;
+    std::vector<VkImageView> m_swapchain_image_views;
+
+    // command
+    VkCommandPool m_command_pool{};
+    std::vector<VkCommandBuffer> m_command_buffers;
 private:
     HWND m_hwnd;
     uint32_t m_cx, m_cy;

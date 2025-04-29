@@ -36,6 +36,20 @@ emt_result emt_create_gpu_memory(emt_gpu_memory *memory)
     return EMT_OK;
 }
 
+VkResult vkCreatePhysicalDeviceEx(const VkPhysicalDeviceExCreateInfo* info, VkPhysicalDeviceEx device_ex)
+{
+    if(!info || !info->physical_device || device_ex != nullptr)
+        return VK_ERROR_INITIALIZATION_FAILED;
+    
+    device_ex = (VkPhysicalDeviceEx)malloc(sizeof(VkPhysicalDeviceEx_T));
+    device_ex->handle = info->physical_device;
+
+    
+    //vkGetPhysicalDeviceProperties(info->physical_device, )
+
+    return VK_SUCCESS;
+}
+
 // VkResult vulkan_create_instance(VkInstance *instance)
 // {
 //     VkDeviceCreateInfo info{};

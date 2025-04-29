@@ -23,7 +23,12 @@ namespace emt
             wc.hInstance, nullptr
         );
 
-        m_context = new vk_context(cx, cy, m_hwnd);
+        RECT rc{};
+        ::GetClientRect(m_hwnd, &rc);
+        uint32_t w = rc.right - rc.left;
+        uint32_t h = rc.bottom - rc.top;
+
+        m_context = new vk_context(w, h, m_hwnd);
 
         ::ShowWindow(m_hwnd, SW_SHOW);
     }

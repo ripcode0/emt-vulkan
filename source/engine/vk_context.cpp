@@ -21,6 +21,9 @@ namespace emt
 
         create_device();
 
+        create_command_pool();
+
+        create_swapchain();
 
     }
 
@@ -93,12 +96,10 @@ namespace emt
 
     void vk_context::create_surface()
     {   
-        // VkWin32SurfaceCreateInfoKHR surface_info{};
-        // surface_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        // surface_info.hinstance = GetModuleHandle(nullptr);
-        // surface_info.hwnd = m_hwnd;
-
-        auto surface_info = vk_init::surface_create_info(m_hwnd);
+        VkWin32SurfaceCreateInfoKHR surface_info{};
+        surface_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+        surface_info.hinstance = GetModuleHandle(nullptr);
+        surface_info.hwnd = m_hwnd;
 
         VK(vkCreateWin32SurfaceKHR(m_instance, &surface_info, nullptr, &m_surface));
     }
@@ -109,8 +110,7 @@ namespace emt
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 
-        vk_physical_device physical_device{};
-        get_physical_device_from_instance(m_instance, m_surface, &physical_device);
+        get_physical_device_from_instance(m_instance, m_surface, &m_physical_device);
 
         // check the 1.3 dynamic rendering
         VkPhysicalDeviceDynamicRenderingFeatures dynamic_rendering_feats{
@@ -127,7 +127,7 @@ namespace emt
 
         VkDeviceQueueCreateInfo queue_info{};
         queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queue_info.queueFamilyIndex = physical_device.family_queue_index;
+        queue_info.queueFamilyIndex = m_physical_device.family_queue_index;
         queue_info.queueCount = 1;
         queue_info.pQueuePriorities = &queue_priority;
 
@@ -139,7 +139,7 @@ namespace emt
         device_info.enabledExtensionCount = device_extensions.size();
         device_info.ppEnabledExtensionNames = device_extensions.data();
 
-        VK(vkCreateDevice(physical_device, &device_info, nullptr, &m_device));
+        VK(vkCreateDevice(m_physical_device, &device_info, nullptr, &m_device));
       
         // TODO: fix
         int a = 0;
@@ -190,6 +190,91 @@ namespace emt
         }
     }
 
+    void vk_context::create_command_pool()
+    {
+        VkCommandPoolCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        info.queueFamilyIndex = m_physical_device.family_queue_index;
+        info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
+        VK(vkCreateCommandPool(m_device, &info, nullptr, &m_command_pool));
+
+    }
+
+    void vk_context::create_swapchain()
+    {
+        VkSurfaceCapabilitiesKHR caps{};
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physical_device, m_surface, &caps);
+
+        VkExtent2D extent {
+          m_cx, m_cy  
+        };
+
+        uint32_t image_count = caps.minImageCount + 1;
+        if(caps.maxImageCount > 0 && image_count > caps.maxImageCount){
+            image_count = caps.maxImageCount;
+        }
+
+        VkSwapchainCreateInfoKHR swapchain_info{};
+        swapchain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        swapchain_info.surface = m_surface;
+        swapchain_info.minImageCount = image_count;
+        swapchain_info.imageFormat = VK_FORMAT_B8G8R8A8_SRGB;
+        swapchain_info.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+        swapchain_info.imageExtent = extent;
+        swapchain_info.imageArrayLayers = 1;
+        swapchain_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        swapchain_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        swapchain_info.preTransform = caps.currentTransform;
+        swapchain_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        swapchain_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+        swapchain_info.clipped = VK_TRUE;
+        swapchain_info.oldSwapchain = VK_NULL_HANDLE;
+
+        VK(vkCreateSwapchainKHR(m_device, &swapchain_info, nullptr, &m_swapchain));
+
+        printf("[emt] swapchain is created\n");
+        printf("[emt] image count : %d\n", (int)image_count);
+
+        
+        vkGetSwapchainImagesKHR(m_device, m_swapchain, &image_count, nullptr);
+        m_swapchain_images.resize(image_count);
+        vkGetSwapchainImagesKHR(m_device, m_swapchain, &image_count, m_swapchain_images.data());
+
+        printf("[emt] VkImage : %d\n", (int)m_swapchain_images.size());
+
+        m_swapchain_image_views.resize(image_count);
+
+        for(uint32_t i =0; i < image_count; ++i){
+            VkImageViewCreateInfo view_info{};
+            view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            view_info.image = m_swapchain_images[i];
+            view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            view_info.format = VK_FORMAT_R8G8B8A8_SRGB;
+            view_info.components = { VK_COMPONENT_SWIZZLE_IDENTITY,VK_COMPONENT_SWIZZLE_IDENTITY,
+                VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY
+            };
+            view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            view_info.subresourceRange.baseMipLevel = 0;
+            view_info.subresourceRange.levelCount = 1;
+            view_info.subresourceRange.baseArrayLayer = 0;
+            view_info.subresourceRange.layerCount = 1;
+
+            VK(vkCreateImageView(m_device, &view_info, nullptr, &m_swapchain_image_views[i]));
+        }
+    }
+
+    void vk_context::create_command_buffers()
+    {
+        m_command_buffers.resize(m_swapchain_image_views.size());
+
+        VkCommandBufferAllocateInfo alloc_info{};
+        alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        alloc_info.commandPool = m_command_pool;
+        alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        alloc_info.commandBufferCount = (uint32_t)m_command_buffers.size();
+
+        VK(vkAllocateCommandBuffers(m_device, &alloc_info, m_command_buffers.data()));
+    }
 
 } // namespace emt

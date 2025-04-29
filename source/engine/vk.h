@@ -28,6 +28,27 @@ emt_result emt_create_gpu_memory(emt_gpu_memory* memory);
 
 VkResult vulkan_create_instance(VkInstance* instance);
 
+VK_DEFINE_HANDLE(VkPhysicalDeviceEx)
+
+typedef struct VkPhysicalDeviceEx_T{
+    // the VkPhysicalDevice not created directly.
+    // it's acquired from what the Vulkan driver manages internally
+    VkPhysicalDevice handle = VK_NULL_HANDLE;
+    uint32_t family_queue_index = UINT32_MAX;
+    operator VkPhysicalDevice() const noexcept{
+        return handle;
+    }
+}VkPhysicalDeviceEx_T;
+
+struct VkPhysicalDeviceExCreateInfo{
+    uint32_t sType;
+    const VkPhysicalDevice physical_device;
+    const VkInstance instance;
+    const VkSurfaceFormatKHR format;
+
+};
+VkResult vkCreatePhysicalDeviceEx(const VkPhysicalDeviceExCreateInfo* info, VkPhysicalDeviceEx device_ex);
+
 
 #ifdef __cplusplus
 }
