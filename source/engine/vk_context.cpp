@@ -21,9 +21,14 @@ namespace emt
 
         create_device();
 
+        //test
+
+
         create_command_pool();
 
         create_swapchain();
+
+        create_render_pass();
 
     }
 
@@ -188,6 +193,9 @@ namespace emt
                 }
             }
         }
+
+        
+        vkGetPhysicalDeviceMemoryProperties(m_physical_device.handle, &m_physical_device.memory_props);
     }
 
     void vk_context::create_command_pool()
@@ -250,7 +258,7 @@ namespace emt
             view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             view_info.image = m_swapchain_images[i];
             view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            view_info.format = VK_FORMAT_R8G8B8A8_SRGB;
+            view_info.format = VK_FORMAT_B8G8R8A8_SRGB;
             view_info.components = { VK_COMPONENT_SWIZZLE_IDENTITY,VK_COMPONENT_SWIZZLE_IDENTITY,
                 VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY
             };
@@ -275,6 +283,65 @@ namespace emt
         alloc_info.commandBufferCount = (uint32_t)m_command_buffers.size();
 
         VK(vkAllocateCommandBuffers(m_device, &alloc_info, m_command_buffers.data()));
+    }
+
+    void vk_context::create_render_pass()
+    {
+        VkAttachmentDescription color_attachment{};
+        color_attachment.format = VK_FORMAT_B8G8R8A8_SRGB;
+        color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+        VkAttachmentReference color_ref{};
+        color_ref.attachment = 0;
+        color_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        
+        VkSubpassDescription subpass{};
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.colorAttachmentCount = 1;
+        subpass.pColorAttachments = &color_ref;
+
+        VkRenderPassCreateInfo renderpass_info{};
+        renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        renderpass_info.attachmentCount = 1;
+        renderpass_info.pAttachments = &color_attachment;
+        renderpass_info.subpassCount = 1;
+        renderpass_info.pSubpasses = &subpass;
+
+        VK(vkCreateRenderPass(m_device, &renderpass_info, nullptr, &m_render_pass));
+    }
+
+    void vk_context::record_cmd_buffer(VkCommandBuffer cmd, uint32_t image_index)
+    {
+        VkCommandBufferBeginInfo cmd_begin_info{};
+        cmd_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        VK(vkBeginCommandBuffer(cmd, &cmd_begin_info));
+
+        VkRenderingAttachmentInfo color_attach{};
+        color_attach.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        color_attach.imageView = m_swapchain_image_views[image_index];
+        color_attach.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
+        color_attach.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        color_attach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        color_attach.clearValue = { {0.2f, 0.2f, 0.2, 1.f}};
+
+        VkRenderingInfo rendering_info{};
+        rendering_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        rendering_info.renderArea.extent = {m_cx, m_cy};
+
+
+    }
+
+    void vk_context::begin_frame()
+    {
+
+    }
+
+    void vk_context::end_frame()
+    {
     }
 
 } // namespace emt

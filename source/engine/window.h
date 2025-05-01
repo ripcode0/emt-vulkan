@@ -4,8 +4,6 @@
 #include <windows.h>
 #include <stdint.h>
 
-
-
 namespace emt
 {
 class vk_context;

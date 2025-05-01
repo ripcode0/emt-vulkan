@@ -26,9 +26,10 @@ namespace emt
 
 struct vk_physical_device
 {
-    uint32_t family_queue_index = UINT32_MAX;
     VkPhysicalDevice handle;
+    uint32_t family_queue_index = UINT32_MAX;
     VkQueueFlags flags;
+    VkPhysicalDeviceMemoryProperties memory_props;
     
     operator VkPhysicalDevice() const noexcept {
         return handle;
@@ -60,6 +61,7 @@ public:
     VkDevice m_device = VK_NULL_HANDLE;
     VkQueue m_graphics_queue = nullptr;
     vk_physical_device m_physical_device{};
+    
 
     VkDebugUtilsMessengerEXT m_debug_messenger{};
 
@@ -71,6 +73,15 @@ public:
     // command
     VkCommandPool m_command_pool{};
     std::vector<VkCommandBuffer> m_command_buffers;
+
+    // render pass
+    VkRenderPass m_render_pass{};
+    void create_render_pass();
+
+    void record_cmd_buffer(VkCommandBuffer cmd, uint32_t image_index);
+
+    void begin_frame();
+    void end_frame();
 private:
     HWND m_hwnd;
     uint32_t m_cx, m_cy;
