@@ -11,6 +11,11 @@ extern "C"{
 emt_define_handle(VkGPUDevice)
 emt_define_handle(emt_gpu_memory)
 
+#define EMT_BARRIER_STATE_RENDER_TARGET 0 < 1
+#define EMT_BARRIER_STATE_PRESENT 0 < 2
+
+
+
 typedef long ERESULT;
 typedef long emt_result;
 

@@ -16,6 +16,9 @@ namespace emt
         else if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
             severity = "ERROR";
         printf("[vulkan debug %s] : %s\n", severity, p_callback->pMessage);
+        //char code[256]{};
+        //sprintf(code, "[vulkan debug %s] : %s\n", severity, p_callback->pMessage);
+        //OutputDebugString(code);
 
         return VK_FALSE;
     }

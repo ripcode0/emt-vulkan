@@ -1,5 +1,6 @@
 #include "window.h"
 #include <vk_context.h>
+#include <scene.h>
 
 namespace emt
 {
@@ -41,8 +42,11 @@ namespace emt
         
     }
 
-    int window::exec()
+    int window::exec(scene* scene)
     {
+        if(m_context && scene){
+            scene->init_frame();
+        }
         MSG msg{};
         while (msg.message != WM_QUIT)
         {
@@ -55,6 +59,20 @@ namespace emt
                 ::DispatchMessage(&msg);
             }
             //TODO : render system
+            if(m_context){
+                //Sleep(1000);
+                static int frame = 0;
+                //printf("frame : %d : current : %d\n", frame++, m_context->m_current_frame);
+                m_context->begin_frame();
+
+                if(scene){
+                    scene->update_frame(0.0f);
+                    scene->render_frame();
+                }
+
+                m_context->end_frame();
+
+            }
         }
         
         return (int)msg.lParam;

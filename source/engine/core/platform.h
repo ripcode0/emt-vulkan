@@ -16,6 +16,8 @@ typedef struct platform_state
 #define emt_check_memory_Leak (void()0)
 #endif
 
+#define safe_delete(ptr) do { if (ptr) { delete (ptr); (ptr) = nullptr; } } while (0)
+
 void* emt_alloc(size_t size, bool aligned) {
     return malloc(size);
 }

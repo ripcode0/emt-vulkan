@@ -6,6 +6,7 @@
 
 namespace emt
 {
+class scene;
 class vk_context;
 class window{
 public:
@@ -15,7 +16,7 @@ public:
     HWND m_hwnd;
     vk_context* m_context;
 
-    int exec();
+    int exec(scene* scene);
 
     static LRESULT wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 };

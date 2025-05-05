@@ -45,7 +45,7 @@
 * `렌더 패스` 종료
 * `커맨드` 제출 (세마포어 동기화 포함)
 * 이미지 `프레젠트`
-```c
+```cpp
 while (!windowShouldClose()) {
     // 1. 이전 프레임 펜스 대기 및 리셋
     vkWaitForFences(...); vkResetFences(...);
@@ -65,7 +65,7 @@ while (!windowShouldClose()) {
     vkEndCommandBuffer(...);
 
     // 9. 커맨드 제출: vkQueueSubmit(...)
-    //    - waitSemaphore (image available), signalSemaphore (render finished)
+    // waitSemaphore (image available), signalSemaphore (render finished)
 
     // 10. 프레젠트 요청: vkQueuePresentKHR(...)
 }

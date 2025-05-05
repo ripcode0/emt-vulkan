@@ -9,21 +9,10 @@
 inline static PFN_vkCreateDebugUtilsMessengerEXT _vkCreateDebugUtilsMessengerEXT = nullptr;
 #define vkCreateDebugUtilsMessengerEXT _vkCreateDebugUtilsMessengerEXT
 
+#define MAX_SYNC_FRAMES 2
 
 namespace emt
 {
-// struct vk_gpu_device
-// {
-//     VkPhysicalDevice handle;
-//     VkPhysicalDeviceProperties props;
-//     VkPhysicalDeviceMemoryProperties mem_props;
-//     VkPhysicalDeviceFeatures features;
-//     VkSurfaceCapabilitiesKHR surface_caps;
-//     std::vector<VkSurfaceFormatKHR> surface_formats;
-//     std::vector<VkPresentModeKHR> present_modes;
-//     uint32_t queue_family_index;
-// };
-
 struct vk_physical_device
 {
     VkPhysicalDevice handle;
@@ -78,12 +67,26 @@ public:
     VkRenderPass m_render_pass{};
     void create_render_pass();
 
-    void record_cmd_buffer(VkCommandBuffer cmd, uint32_t image_index);
+    // sync
+    VkSemaphore m_present_semaphore[MAX_SYNC_FRAMES];
+    VkSemaphore m_render_semaphore[MAX_SYNC_FRAMES];
+    VkFence m_fence[MAX_SYNC_FRAMES];
 
+    void create_sync_objects();
+
+
+
+    void record_cmd_buffer(VkCommandBuffer cmd, uint32_t image_index);
+    void record_cmd_buffer_13(VkCommandBuffer cmd);
     void begin_frame();
     void end_frame();
-private:
+
+    VkCommandBuffer get_command_buffer();
+//private:
     HWND m_hwnd;
     uint32_t m_cx, m_cy;
+    uint32_t m_current_frame{};
+    uint32_t m_image_index{};
+    
 };
 } // namespace emt

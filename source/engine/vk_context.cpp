@@ -30,6 +30,10 @@ namespace emt
 
         create_render_pass();
 
+        create_command_buffers();
+
+        create_sync_objects();
+
     }
 
     vk_context::~vk_context()
@@ -112,7 +116,8 @@ namespace emt
     void vk_context::create_device()
     {
         const std::vector<const char*> device_extensions = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            //"VK_KHR_dynamic_rendering"
         };
 
         get_physical_device_from_instance(m_instance, m_surface, &m_physical_device);
@@ -121,6 +126,7 @@ namespace emt
         VkPhysicalDeviceDynamicRenderingFeatures dynamic_rendering_feats{
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES};
         dynamic_rendering_feats.dynamicRendering = TRUE;
+        
         
         VkPhysicalDeviceFeatures2 feats{
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2
@@ -146,8 +152,8 @@ namespace emt
 
         VK(vkCreateDevice(m_physical_device, &device_info, nullptr, &m_device));
       
-        // TODO: fix
-        int a = 0;
+        
+        vkGetDeviceQueue(m_device, m_physical_device.family_queue_index, 0, &m_graphics_queue);
 
 
         
@@ -274,7 +280,8 @@ namespace emt
 
     void vk_context::create_command_buffers()
     {
-        m_command_buffers.resize(m_swapchain_image_views.size());
+        //m_command_buffers.resize(m_swapchain_image_views.size());
+        m_command_buffers.resize(MAX_SYNC_FRAMES);
 
         VkCommandBufferAllocateInfo alloc_info{};
         alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -314,6 +321,21 @@ namespace emt
         VK(vkCreateRenderPass(m_device, &renderpass_info, nullptr, &m_render_pass));
     }
 
+    void vk_context::create_sync_objects()
+    {
+        VkSemaphoreCreateInfo semaphore_info{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+        VkFenceCreateInfo fence_info(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
+        fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+        for(uint32_t i = 0; i < MAX_SYNC_FRAMES; ++i){
+            VK(vkCreateSemaphore(m_device, &semaphore_info, nullptr, &m_present_semaphore[i]));
+            VK(vkCreateSemaphore(m_device, &semaphore_info, nullptr, &m_render_semaphore[i]));
+            VK(vkCreateFence(m_device, &fence_info, nullptr, &m_fence[i]));
+        }
+
+
+    }
+
     void vk_context::record_cmd_buffer(VkCommandBuffer cmd, uint32_t image_index)
     {
         VkCommandBufferBeginInfo cmd_begin_info{};
@@ -335,13 +357,205 @@ namespace emt
 
     }
 
+    void vk_context::record_cmd_buffer_13(VkCommandBuffer cmd)
+    {
+        VkCommandBufferBeginInfo cmd_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+        //cmd_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        vkBeginCommandBuffer(cmd, &cmd_info);
+
+        
+
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        //barrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        barrier.image = m_swapchain_images[m_image_index];
+        barrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+        vkCmdPipelineBarrier(
+            cmd,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            0,
+            0, nullptr, 0, nullptr,
+            1, &barrier
+        );
+
+        VkRenderingAttachmentInfo color_info{};
+        color_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        color_info.imageView = m_swapchain_image_views[m_image_index];
+        color_info.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+        color_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        color_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        color_info.clearValue = {{0.3f, 0.2f, 0.2f, 1.f}};
+
+        VkRenderingInfo render_info{};
+        render_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        render_info.renderArea.extent = {m_cx, m_cy};
+        render_info.layerCount = 1;
+        render_info.colorAttachmentCount = 1;
+        render_info.pColorAttachments = &color_info;
+
+        vkCmdBeginRendering(cmd, &render_info);
+
+        VkClearAttachment clear_attachment{};
+        clear_attachment.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        clear_attachment.colorAttachment = 0;
+        clear_attachment.clearValue.color = {{1.0f,0.f,0.f,1.f}};
+
+        VkClearRect rc{};
+        rc.rect.offset = {0,0};
+        rc.rect.extent = {m_cx, m_cy};
+        rc.baseArrayLayer = 0;
+        rc.layerCount = 1;
+
+        vkCmdClearAttachments(cmd, 1, &clear_attachment, 1,&rc);
+        
+
+        vkCmdEndRendering(cmd);
+
+        //VkImageMemoryBarrier barrier{};
+        //barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        //barrier.oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        barrier.dstAccessMask = 0;
+        barrier.image = m_swapchain_images[m_image_index];
+        barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+
+        vkCmdPipelineBarrier(cmd, 
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            0,
+            0, nullptr, 0, nullptr, 1, &barrier);
+        
+        vkEndCommandBuffer(cmd);
+    }
+
     void vk_context::begin_frame()
     {
+        vkWaitForFences(m_device, 1, &m_fence[m_current_frame], VK_TRUE, UINT64_MAX);
+        VK(vkResetFences(m_device, 1, &m_fence[m_current_frame]));
+
+        
+        VkResult res = vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, 
+            m_present_semaphore[m_current_frame], VK_NULL_HANDLE ,&m_image_index);
+        
+        if(res == VK_ERROR_OUT_OF_DATE_KHR){
+
+            int a =0;
+        }
+        VkCommandBuffer cmd = get_command_buffer();
+
+        VkCommandBufferBeginInfo cmd_info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+        //cmd_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        vkBeginCommandBuffer(cmd, &cmd_info);
+
+        
+
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        //barrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        barrier.image = m_swapchain_images[m_image_index];
+        barrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+        vkCmdPipelineBarrier(
+            cmd,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            0,
+            0, nullptr, 0, nullptr,
+            1, &barrier
+        );
+
+        VkRenderingAttachmentInfo color_info{};
+        color_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        color_info.imageView = m_swapchain_image_views[m_image_index];
+        color_info.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+        color_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        color_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        color_info.clearValue = {{0.3f, 0.2f, 0.2f, 1.f}};
+
+        VkRenderingInfo render_info{};
+        render_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        render_info.renderArea.extent = {m_cx, m_cy};
+        render_info.layerCount = 1;
+        render_info.colorAttachmentCount = 1;
+        render_info.pColorAttachments = &color_info;
+
+        //TODO : replace
+        vkCmdBeginRendering(cmd, &render_info);
 
     }
 
     void vk_context::end_frame()
     {
+        const VkCommandBuffer cmd = get_command_buffer();
+
+        vkCmdEndRendering(cmd);
+
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        barrier.dstAccessMask = 0;
+        barrier.image = m_swapchain_images[m_image_index];
+        barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+
+        vkCmdPipelineBarrier(cmd, 
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            0,
+            0, nullptr, 0, nullptr, 1, &barrier);
+        
+        vkEndCommandBuffer(cmd);
+        // const VkCommandBuffer cmd = m_command_buffers[m_current_frame];
+        // record_cmd_buffer_13(cmd);
+        VkPipelineStageFlags wait_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        VkSubmitInfo submit_info{};
+        submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit_info.pWaitDstStageMask = &wait_stage_mask;
+        submit_info.pCommandBuffers = &cmd;
+        submit_info.commandBufferCount = 1;
+        submit_info.pWaitSemaphores = &m_present_semaphore[m_current_frame];
+        submit_info.waitSemaphoreCount = 1;
+
+        submit_info.pSignalSemaphores = &m_render_semaphore[m_current_frame];
+        submit_info.signalSemaphoreCount = 1;
+
+        VK(vkQueueSubmit(m_graphics_queue, 1, &submit_info, m_fence[m_current_frame]));
+
+        VkPresentInfoKHR present_info{};
+        present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        present_info.waitSemaphoreCount =1;
+        present_info.pWaitSemaphores = &m_render_semaphore[m_current_frame];
+        present_info.swapchainCount = 1;
+        present_info.pSwapchains = &m_swapchain;
+        present_info.pImageIndices = &m_image_index;
+
+        vkQueuePresentKHR(m_graphics_queue, &present_info);
+
+
+        m_current_frame = (m_current_frame + 1) % MAX_SYNC_FRAMES;
+
+        //vkDeviceWaitIdle(m_device);
+    }
+
+    VkCommandBuffer vk_context::get_command_buffer()
+    {
+        return m_command_buffers[m_current_frame];
     }
 
 } // namespace emt
