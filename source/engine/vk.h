@@ -1,60 +1,49 @@
 #pragma once
 
 #include <vk_config.h>
+#include <vk_mem_alloc.h>
 
 #ifdef __cplusplus
 extern "C"{
 #endif
 
-#define emt_define_handle(obj) typedef struct obj##_t* obj;
-
-emt_define_handle(VkGPUDevice)
-emt_define_handle(emt_gpu_memory)
-
-#define EMT_BARRIER_STATE_RENDER_TARGET 0 < 1
-#define EMT_BARRIER_STATE_PRESENT 0 < 2
-
-
-
-typedef long ERESULT;
-typedef long emt_result;
-
-#define EMT_OK              ((ERESULT)0x00000000)
-#define EMT_INVAILID_ARGS   ((ERESULT)0x80000001)
-
-struct VkGPUDeviceCreateInfo
+namespace emt
 {
-    int count;    
+class vk_context;
+struct vk_buffer
+{
+    VkBuffer handle;
+    VkDeviceMemory memory;
 };
 
-ERESULT vkCreateGPUDevice(const VkGPUDeviceCreateInfo* info, VkGPUDevice* device);
+struct vk
+{
+    static void initialize(vk_context* context);
+    static void uninitialize();
 
-emt_result emt_create_gpu_memory(emt_gpu_memory* memory);
+    //  static VkResult create_gpu_memory_buffer(
+    //     const void* data, const uint32_t size, const VkBufferUsageFlagBits usage, VkBufferEx* p_buffer);
+    
+    static void create_buffer_vma(
+        const void* data,
+        uint32_t size,
+        VkBufferUsageFlagBits usage,
+        VkBuffer& buffer);
 
-VkResult vulkan_create_instance(VkInstance* instance);
-
-VK_DEFINE_HANDLE(VkPhysicalDeviceEx)
-
-typedef struct VkPhysicalDeviceEx_T{
-    // the VkPhysicalDevice not created directly.
-    // it's acquired from what the Vulkan driver manages internally
-    VkPhysicalDevice handle = VK_NULL_HANDLE;
-    uint32_t family_queue_index = UINT32_MAX;
-    operator VkPhysicalDevice() const noexcept{
-        return handle;
-    }
-}VkPhysicalDeviceEx_T;
-
-struct VkPhysicalDeviceExCreateInfo{
-    uint32_t sType;
-    const VkPhysicalDevice physical_device;
-    const VkInstance instance;
-    const VkSurfaceFormatKHR format;
+    static uint32_t get_memory_type_index(uint32_t type_bit, VkMemoryPropertyFlags flags);
+private:
+    inline static VkDevice device{};
+    inline static VkCommandBuffer cmd{};
+    inline static VkQueue queue{};
+    inline static VkPhysicalDeviceMemoryProperties mem_props{};
+    inline static VkCommandPool cmd_pool{};
+    inline static VkFence fence{};
+    inline static VmaAllocator vma_allocator{};
+    inline static bool is_initialized{false};
 
 };
-VkResult vkCreatePhysicalDeviceEx(const VkPhysicalDeviceExCreateInfo* info, VkPhysicalDeviceEx device_ex);
 
-
+} // namespace emt
 #ifdef __cplusplus
 }
 #endif

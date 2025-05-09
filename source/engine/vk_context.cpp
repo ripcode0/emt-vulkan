@@ -34,12 +34,17 @@ namespace emt
 
         create_sync_objects();
 
+        // init sub vulkan tools, vma ..etc
+        vk::initialize(this);
+
     }
 
     vk_context::~vk_context()
     {
-        vkDestroyInstance(m_instance, nullptr);
-
+        //vkDestroyInstance(m_instance, nullptr);
+        vkWaitForFences(m_device, 2, m_fence, VK_TRUE, VK_DEFAULT_FENCE_TIMEOUT);
+        
+        
     }
 
     void vk_context::create_instance()
@@ -556,6 +561,19 @@ namespace emt
     VkCommandBuffer vk_context::get_command_buffer()
     {
         return m_command_buffers[m_current_frame];
+    }
+
+    uint32_t vk_context::get_memory_type_index(uint32_t type_bit, VkMemoryPropertyFlags props)
+    {
+        for(uint32_t i = 0; i < m_physical_device.memory_props.memoryTypeCount; i++){
+            if((type_bit & 1) == 1){
+                if((m_physical_device.memory_props.memoryTypes[i].propertyFlags & props) == props){
+                    return i;
+                }
+            }
+            type_bit >>= 1;
+        }
+        throw "could not find a suitable memory type";
     }
 
 } // namespace emt

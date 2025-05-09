@@ -80,13 +80,16 @@ public:
     void record_cmd_buffer_13(VkCommandBuffer cmd);
     void begin_frame();
     void end_frame();
-
+    
+    // current command buffer in frames
     VkCommandBuffer get_command_buffer();
 //private:
     HWND m_hwnd;
     uint32_t m_cx, m_cy;
     uint32_t m_current_frame{};
     uint32_t m_image_index{};
+
+    uint32_t get_memory_type_index(uint32_t type_bit, VkMemoryPropertyFlags props);
     
 };
 } // namespace emt

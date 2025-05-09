@@ -7,6 +7,9 @@
 #endif
 #include <assert.h>
 #include <string>
+#include <vk.h>
+
+#define VK_DEFAULT_FENCE_TIMEOUT 100000000000
 
 #define vk_load_instance_func(device, func) \
     do { \
@@ -31,6 +34,31 @@
             abort();                                                                  \
         }                                                                             \
     } while (0)
+
+// define template
+template<typename T> struct VkDestroyFn;
+
+// each funtion modify
+#define reg_vk_destory_fn(VkType, FuncName)              \
+    template<> struct VkDestroyFn<VkType> {                 \
+        static void deleter(VkDevice device, VkType obj) {     \
+            FuncName(device, obj, nullptr);                 \
+        }                                                   \
+    }
+
+// register function name
+reg_vk_destory_fn(VkFence, vkDestroyFence);
+reg_vk_destory_fn(VkBuffer, vkDestroyBuffer);
+
+template<typename T>
+inline void vk_safe_destroy_t(VkDevice device, T& handle) {
+    if (handle != VK_NULL_HANDLE) {
+        VkDestroyFn<T>::deleter(device, handle);
+        handle = VK_NULL_HANDLE;
+    }
+}
+
+#define vk_safe_destroy(device, handle) vk_safe_destroy_t(device, handle)
 
 inline const char* vk_error_to_str(VkResult result) {
     switch (result) {
