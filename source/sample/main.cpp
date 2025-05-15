@@ -7,7 +7,7 @@ int main(int args, char* argv[])
 {
     emt_check_memory_Leak;
     
-    emt::window* window = new emt::window(1024, 780, "vulkan");
+    emt::window* window = new emt::window(1024, 780, "vulkan engine");
 
     emt::traiangle_dynamic_rendering scene(window->m_context);
 

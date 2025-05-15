@@ -9,3 +9,19 @@ target_include_directories(sample PRIVATE
     ${CMAKE_SOURCE_DIR}/source/engine
     "${Vulkan_INCLUDE_DIRS}"
 )
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(sample PRIVATE 
+        -Wno-nullability-completeness
+        -Wno-nullability-extension
+        )
+endif()
+
+# add_custom_command(
+#     TARGET sample POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E create_symlink
+#     "${data_dir}"
+#     "${data_dir_dst}"
+#     COMMENT "creating symbolic link to data directory"
+# )
+

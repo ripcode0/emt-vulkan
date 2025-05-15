@@ -1,13 +1,7 @@
 #pragma once
 
-#define emt_platform emt_platform_win32
-
-
 #include <vk_config.h>
 #include <vector>
-
-inline static PFN_vkCreateDebugUtilsMessengerEXT _vkCreateDebugUtilsMessengerEXT = nullptr;
-#define vkCreateDebugUtilsMessengerEXT _vkCreateDebugUtilsMessengerEXT
 
 #define MAX_SYNC_FRAMES 2
 
@@ -24,9 +18,6 @@ struct vk_physical_device
         return handle;
     }
 };
-
-
-
 
 class vk_context{
 public:

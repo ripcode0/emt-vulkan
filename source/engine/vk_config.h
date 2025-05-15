@@ -60,6 +60,10 @@ inline void vk_safe_destroy_t(VkDevice device, T& handle) {
 
 #define vk_safe_destroy(device, handle) vk_safe_destroy_t(device, handle)
 
+// vk function pointers
+inline static PFN_vkCreateDebugUtilsMessengerEXT _vkCreateDebugUtilsMessengerEXT = nullptr;
+#define vkCreateDebugUtilsMessengerEXT _vkCreateDebugUtilsMessengerEXT
+
 inline const char* vk_error_to_str(VkResult result) {
     switch (result) {
         case VK_SUCCESS: return "VK_SUCCESS";
@@ -108,4 +112,25 @@ inline const char* vk_error_to_str(VkResult result) {
         case VK_OPERATION_NOT_DEFERRED_KHR: return "VK_OPERATION_NOT_DEFERRED_KHR";
         default: return "UNKNOWN_VK_RESULT";
     }
+}
+
+inline VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_message_callback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, 
+    VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT *p_callback, void *p_user_data)
+{
+    const char* severity = "";
+    if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
+        severity = "VERBOSE";
+    else if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+        severity = "INFO";
+    else if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+        severity = "WARNING";
+    else if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+        severity = "ERROR";
+    printf("[vulkan debug %s] : %s\n", severity, p_callback->pMessage);
+    //char code[256]{};
+    //sprintf(code, "[vulkan debug %s] : %s\n", severity, p_callback->pMessage);
+    //OutputDebugString(code);
+
+    return VK_FALSE;
 }

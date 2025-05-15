@@ -2,11 +2,6 @@
 #include <vector>
 #include <iostream>
 #include <Windows.h>
-#include <vulkan/vulkan_win32.h>
-#include <vk_config.h>
-#include <vk_init.h>
-#include <vk_debug.h>
-#include <span>
 
 namespace emt
 {
@@ -43,8 +38,8 @@ namespace emt
     {
         //vkDestroyInstance(m_instance, nullptr);
         vkWaitForFences(m_device, 2, m_fence, VK_TRUE, VK_DEFAULT_FENCE_TIMEOUT);
-        
-        
+
+        vk::uninitialize();
     }
 
     void vk_context::create_instance()
@@ -97,7 +92,7 @@ namespace emt
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
         debug_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        debug_info.pfnUserCallback = vk_debug::debug_utils_message_callback;
+        debug_info.pfnUserCallback = debug_utils_message_callback;
 
         //auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(m_instance, "vkCreateDebugUtilsMessengerEXT");
 
