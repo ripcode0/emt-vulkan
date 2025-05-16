@@ -123,10 +123,8 @@ namespace emt
         get_physical_device_from_instance(m_instance, m_surface, &m_physical_device);
 
         // check the 1.3 dynamic rendering
-        VkPhysicalDeviceDynamicRenderingFeatures dynamic_rendering_feats{
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES};
+        VkPhysicalDeviceDynamicRenderingFeatures dynamic_rendering_feats{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES};
         dynamic_rendering_feats.dynamicRendering = TRUE;
-        
         
         VkPhysicalDeviceFeatures2 feats{
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2
@@ -154,9 +152,6 @@ namespace emt
       
         
         vkGetDeviceQueue(m_device, m_physical_device.family_queue_index, 0, &m_graphics_queue);
-
-
-        
     }
 
     void vk_context::get_physical_device_from_instance(
@@ -447,7 +442,7 @@ namespace emt
             m_present_semaphore[m_current_frame], VK_NULL_HANDLE ,&m_image_index);
         
         if(res == VK_ERROR_OUT_OF_DATE_KHR){
-
+            //TODO 1 : resize swapchain
             int a =0;
         }
         VkCommandBuffer cmd = get_command_buffer();

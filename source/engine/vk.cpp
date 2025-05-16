@@ -174,7 +174,11 @@ std::vector<char> vk::read_binary(const std::string &filename)
 {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
     if(!file.is_open()){
-        throw std::runtime_error("could not open file " + filename);
+        char buffer[128]{};
+        sprintf(buffer, "failed open file %s", filename.c_str());
+        fprintf(stderr, "%s\n", buffer);
+        //assert(false);
+        std::abort();
     }
 
     std::streamsize size = file.tellg();

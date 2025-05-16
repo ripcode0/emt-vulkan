@@ -76,6 +76,8 @@ namespace emt
         }
 
         if(scene) scene->release_frame();
+
+        
         
         return (int)msg.lParam;
     }

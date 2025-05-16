@@ -5,6 +5,18 @@
 #include <vector>
 #include <string>
 
+namespace emt
+{
+template<typename T>
+struct vk_buffer_t
+{
+    T handle{};
+    VmaAllocation allocation{};
+};
+
+} // namespace emt
+
+
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -23,7 +35,6 @@ struct vk_buffer_vma
     VkBuffer handle{};
     VmaAllocation allocation{};
 };
-
 
 struct vk
 {

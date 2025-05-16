@@ -20,6 +20,8 @@ if(MSVC)
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin")
 
 include(compile_shaders)
 
@@ -27,7 +29,7 @@ add_subdirectory(source/engine)
 
 add_subdirectory(source/sample)
 
-#add_dependencies(sample copy_data)
+add_dependencies(sample copy_data)
 
 
 

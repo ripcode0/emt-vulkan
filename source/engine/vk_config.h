@@ -11,6 +11,8 @@
 
 #define VK_DEFAULT_FENCE_TIMEOUT 100000000000
 
+#define safe_delete(ptr) if (ptr) { delete ptr; ptr = nullptr; }
+
 #define vk_load_instance_func(device, func) \
     do { \
         func = (PFN_##func)vkGetInstanceProcAddr(device, #func); \
@@ -49,6 +51,8 @@ template<typename T> struct VkDestroyFn;
 // register function name
 reg_vk_destory_fn(VkFence, vkDestroyFence);
 reg_vk_destory_fn(VkBuffer, vkDestroyBuffer);
+reg_vk_destory_fn(VkShaderModule, vkDestroyShaderModule);
+reg_vk_destory_fn(VkPipelineLayout, vkDestroyPipelineLayout);
 
 template<typename T>
 inline void vk_safe_destroy_t(VkDevice device, T& handle) {

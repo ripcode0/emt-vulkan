@@ -1,5 +1,6 @@
 #include "01-triangle.h"
 #include <vk_context.h>
+#include <vk_pipeline.h>
 
 
 namespace emt
@@ -82,7 +83,7 @@ namespace emt
         vk::create_shader_module("./data/shader/basic_vs.spv", &m_vs_shader);
         vk::create_shader_module("./data/shader/basic_ps.spv", &m_ps_shader);
 
-        // TODO 
+        // # raw vulkan functions for input layout
         VkVertexInputBindingDescription binding_desc{};
         binding_desc.binding = 0;
         binding_desc.stride = sizeof(vertex);
@@ -105,6 +106,15 @@ namespace emt
         vertexinput_state.vertexAttributeDescriptionCount = _countof(attrib_desc);
         vertexinput_state.pVertexAttributeDescriptions = attrib_desc;
 
+        // # wraped function for input layout
+        vk_input_layout input_layout;
+        input_layout.binding({0, sizeof(vertex), VK_VERTEX_INPUT_RATE_VERTEX});
+        // attribute : { location | binding | format | offset }
+        input_layout.attribute({0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(vertex, pos)});
+        input_layout.attribute({1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(vertex, color)});        
+
+        
+
         const VkShaderModule shaders[] = {
             m_vs_shader, m_ps_shader
         };
@@ -117,11 +127,12 @@ namespace emt
 
         VK(vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &m_pipeline_layout));
 
-        vk::create_pipeline(_countof(shaders), shaders, vertexinput_state, m_pipeline_layout, &m_pipeline);
+        vk::create_pipeline(ARRAYSIZE(shaders), shaders, input_layout, m_pipeline_layout, &m_pipeline);
 
+        vk_safe_destroy(device, m_vs_shader);
+        vk_safe_destroy(device, m_ps_shader);
 
         
-        int a = 0; 
     }
 
     void traiangle_dynamic_rendering::create_pipeline()

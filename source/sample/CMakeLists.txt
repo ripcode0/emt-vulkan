@@ -17,6 +17,9 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         )
 endif()
 
+set_target_properties(sample PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
 # add_custom_command(
 #     TARGET sample POST_BUILD
 #     COMMAND ${CMAKE_COMMAND} -E create_symlink
